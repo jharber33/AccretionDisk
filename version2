@@ -10,6 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 #from ..utils import check_random_state
 
+#----------------------------------------------------------------------------
+'>>--------------------------------Variables--------------------------------<<'
 
 R_in   = 5    # radius of central body
 M_body = 1    # mass of central body 
@@ -27,6 +29,8 @@ Time   = 100  # time to run simulation
 # Inputs: Number of Annuli, inner radius, outer radius
 # Output: Array R of the radii of tha Annuli
 
+#----------------------------------------------------------------------------
+'>>--------------------------------Functions--------------------------------<<'
 
 def accretion_disk_array(N, R_in, R_out):
     R = np.empty(N)
@@ -96,6 +100,8 @@ def M_dot():
     return M_dot
 
 
+#----------------------------------------------------------------------------
+'>>--------------------------------Power Law--------------------------------<<'
 def generate_power_law(N, dt, beta, generate_complex=False, random_state=None):
     """Generate a power-law light curve
     This uses the method from Timmer & Koenig [1]_
@@ -214,8 +220,8 @@ def generate_damped_RW(t_rest, tau=300., z=2.0,
 
     return x
 
-
-
+#----------------------------------------------------------------------------
+'>>--------------------------------Plotting-------------------------------<<'
 
 #Set up the disk with N annuli
 annuli= accretion_disk_array(N, R_in, R_out)
