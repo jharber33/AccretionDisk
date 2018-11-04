@@ -1,0 +1,269 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Nov  1 13:03:37 2018
+
+@author: jenniferharber
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+
+#----------------------------------------------------------------------------
+'>>-------------------------------To-Do-List--------------------------------<<'
+"""
+Make time depend on viscous time
+MAX time - visc outer
+MIN time aka timesteps aka sample rate - visc inner
+Replace global variables with local variables 
+"""
+#----------------------------------------------------------------------------
+'>>--------------------------------Physics Constants------------------------<<'
+
+c = 2.99792458e8    # Speed of Light [ metres per second ]
+G = 6.67259e-11     # Gravitational Constant  [ MKS units ] 
+sigma = 5.6703e-8   # Stefan-Boltzmann Constant [Watt m^-2 K^-4]
+
+#----------------------------------------------------------------------------
+'>>--------------------------------Parameters-------------------------------<<'
+
+R_in   = 5.0   # Radius of Central Body, eg. Black Hole, also the start of the disk 
+M_body = 1.0   # Mass of Central Body
+R_out  = 25.0  # Radial distance to edge of disk
+N      = 50    # Number of Annuli , N > 1 at all times 
+H      = 1.0   # Disk Height / Thickness
+M0_dot = 1.0   # Accretion Rate at outer radii, where mass first flows in 
+alpha  = 2000.0  # Viscosity Parameter 
+sf     = 0.1   # Scale Factor, m_dot << 1
+#time   = 1000  # Time to Run Simulation
+scale_factor = 0.1   # m_dot << 1
+sample_ratio = 10 # factor of viscous_timescale to sample
+
+#----------------------------------------------------------------------------
+'>>--------------------------------Functions--------------------------------<<'
+
+
+def accretion_disk (N, R_in, R_out):
+    """
+    Creates an array of all the annulus (defined by calling accretion disk array so annuli = R)
+    Function "accretion_disk" to split the disk into N annuli     
+    This function creates an empty disk of multiple annuli to be later filled
+    Annuli are geometrically distributed so that r/(r+1) is a constant 
+
+    Inputs: Number of Annuli, inner radius, outer radius
+    Output: Array R of the radii of that Annuli
+    """
+    R = np.empty(N)
+    ratio = (R_out/R_in) ** (1.0/(N-1))
+    for i in range(N):
+        #R[i] = (((R_out - R_in) / N) * i) + R_in   # linear progression
+        R[i] = R_in * (ratio ** i)                  # geometric progression
+    return R
+
+
+def viscous_timescale(r):    
+    """
+    Function "viscous_timescale" to calculate the viscous velecity at a particular radius 
+    Using the formula given in (enter ref)
+    Inputs: Radius
+    Output: viscous velecity at that radius
+    """
+    t_viscous = (2*np.pi)*r**(3.0/2.0) / ((H/R_out)**(2.0) * alpha)
+    return t_viscous  
+
+
+def phase_shift(annuli,annulus):
+    """
+    Function "Phase_Shift" to calculate the delta viscous velecity at a given annulus 
+    Inputs: Annulus
+    Output: Delta Timescale
+    """
+    delta_t = viscous_timescale(annuli[annulus+1]) - viscous_timescale(annuli[annulus])
+    return int(delta_t)
+
+
+#def viscous_frequency(annuli):
+#    """
+#    This creates an individual frequency value for each annulus
+#    """
+#    t_visc = viscous_timescale(annuli)
+#    f_visc = 1 / t_visc
+#    return f_visc
+
+
+def time_division(annuli):
+    """
+    This calculates the number of time divisions required for each annulus
+    sample ratio * viscous timescale for that annulus
+    """
+    
+    time_div=np.empty(len(annuli),dtype=int)
+    for annulus in range(len(annuli)):
+        r = annuli[annulus]
+        time_div[annulus]=int(viscous_timescale(r) * sample_ratio)
+    return time_div
+
+
+def create_variable_array(times):
+    """
+    This creates a 1D array with the time readings for annulus 0 followed by 1 
+    and then 2 and so on. The number of entries is the sum of the times slices
+    per annulus
+    """
+    R=np.empty(np.sum(times))
+    return R
+
+
+def radius_to_annulus(r,annuli):
+    
+    """
+    returns the annulus in which a certain radius can be found
+    """
+    if r < R_in:
+        return -1
+    for annulus in range(len(annuli)):
+        if annuli[annulus] == r:
+            annulus_smaller = annulus
+            return annulus_smaller    
+        if annuli[annulus] > r:
+            annulus_smaller = annulus-1
+            return annulus_smaller
+    return len(annuli)-1
+    
+def read_variable_array(array,annuli,times,t,r):
+    """
+    generalised function to deal with treating the 1D array given radius and time 
+    inputs - interpolated between the two nearest timestamps
+    """
+    annulus = radius_to_annulus(r,annuli)
+    annulus_start = np.sum(times[0:annulus])
+    value = array[int(annulus_start+t)]
+    return value
+        
+
+def update_variable_array(array,annuli,times,t,r,value):    
+    """
+    generalised function to deal with updating the 1D array given radius and time 
+    inputs
+    """
+    annulus=radius_to_annulus(r,annuli)
+    annulus_start=np.sum(times[0:annulus])
+    array[annulus_start+t]=value
+    return ()
+    
+
+def m_dot(annuli,times):
+    """
+    Function: "m_dot" to calculate variable rate of change of mass in a particular annulus 
+        For each annulus calculate the radius and viscous timescalethen 
+        for each time division use the timescale as the frequency of a sine wave
+        calculate the small periodic changes in each annuli
+        
+    Inputs: array of annuli,array of annuli,array of time divisions (how many per annulus)
+    Output: Array of lowercase m_dot changes
+    """
+    
+    m_dot = create_variable_array(times)
+    for annulus in range(len(annuli)):
+        # For each annulus calculate the radius and viscous timescale
+        # then for each time division use the timescale as the frequency of a sine wave
+        r = annuli[annulus]
+        timescale = viscous_timescale(r) / (2.0 * np.pi) 
+        for t in range(times[annulus]):
+            value = scale_factor * np.sin( t / timescale)
+            update_variable_array(m_dot,annuli,times,t,r,value)
+    return m_dot
+
+
+def M_dot(m_dot,annuli,times):
+    """
+    Function: "M_dot" to calculate the overall rate of change of mass in a particular annulus 
+        For inner annului the rate of flow is determined by the rate from the next annuli and the small change m_dot   
+        the rate from the outer annuli is time delayed by the time it takes the mass to cross that annuli  (t_offset)
+        The code cycles through the annuli from the outside (penultimate annulus) to the inside
+        As the pattern is cyclical I assume that is the time is smaller than the offset we can start the cycle again
+    
+    Inputs: None as it cycles through each annulus
+    Output: Array of Capital M_dot changes
+    """
+    M_dot = create_variable_array(times)
+    #For outer annulus there is no other input than the base rate of flow into the disk (M_0)and the small change in that annuli
+    r=annuli[len(annuli)-1]
+    for t in range(times[len(annuli)-1]):
+        value = M0_dot * (1.0 + read_variable_array(m_dot,annuli,times,t,r))
+        update_variable_array(M_dot,annuli,times,t,r,value)
+   
+    for annulus in range(len(annuli)-2,-1,-1): #backwards through array
+        r=annuli[annulus]
+        r1=annuli[annulus+1]
+        t_offset_annulus = phase_shift(annuli,annulus)
+        for t in range(times[annulus]):
+            t_offset = t - t_offset_annulus 
+            if t_offset < 0:
+                t_offset = t_offset + viscous_timescale(r)
+            value = read_variable_array(M_dot,annuli,times,t_offset,r1) *(1.0 + read_variable_array(m_dot,annuli,times,t,r))
+            update_variable_array(M_dot,annuli,times,t,r,value)
+    return M_dot
+
+
+def viscous_velocity(R): 
+    """
+    Radial Drift Velocity
+    """
+    v_visc = R**(-1.0/2.0) * (H/R_out)**(2.0) * alpha
+    return v_visc
+
+def emissivity_profile(R):
+    """
+    Emissivity Profile for use in radiation of heat and light 
+    """
+    E = R**(-3.0)*(1 - (R_in/R)**(1.0/2.0))
+    return E
+
+
+def effective_temperature(R): 
+    """
+    Effective Temperature, used in deteremining the blackbody spectrum
+    """
+    T_eff = ((3 * G * m_dot * M_body)/(8 * np.pi * (R**3.0) * sigma))**(1.0/4.0)
+    return T_eff
+
+
+disk_annuli = accretion_disk(N, R_in, R_out)
+disk_time_divisions = time_division(disk_annuli)
+print("disk set up")
+disk_m_dot = m_dot(disk_annuli,disk_time_divisions) 
+print("m_dot set up")
+disk_M_dot = M_dot(disk_m_dot,disk_annuli,disk_time_divisions) 
+
+
+
+
+#----------------------------------------------------------------------------
+'>>--------------------------------Plotting-------------------------------<<'
+
+
+
+#y0_plot=np.empty(Time)
+annulus=1
+y1_plot=np.empty(disk_time_divisions[annulus])
+x_plot=np.empty(disk_time_divisions[annulus])
+#
+for t in range(disk_time_divisions[annulus]):
+    x_plot[t]=t
+    y1_plot[t]=read_variable_array(disk_M_dot,disk_annuli,disk_time_divisions,t,disk_annuli[annulus])
+#    y1_plot[i]=M_dot[1][i] 
+#    
+#    
+#plt.figure(figsize = (8,5))
+#plt.title("Mass Accretion Rate for annulus 0, 1", fontsize =15)
+plt.xlabel("x", fontsize =10)
+plt.ylabel("y", fontsize =10)
+#plt.plot(x_plot,y0_plot,'b',linewidth=1, label ='$Cˆ{12}$')
+plt.plot(x_plot,y1_plot,'r',linewidth=1, label ='$Cˆ{12}$' )
+
+
+
+
+plt.show()
