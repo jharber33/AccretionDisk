@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 #----------------------------------------------------------------------------
 '>>-------------------------------To-Do-List--------------------------------<<'
 """
-Make time depend on viscous time
-MAX time - visc outer
-MIN time aka timesteps aka sample rate - visc inner
-Replace global variables with local variables 
+Have the time shift be where the next waveform starts, doesnt make sense for there to be data
+before it has reached the next annulus.
+
+Create light curves 
 """
 #----------------------------------------------------------------------------
 '>>--------------------------------Physics Constants------------------------<<'
@@ -35,7 +35,6 @@ N      = 50    # Number of Annuli , N > 1 at all times
 H      = 1.0   # Disk Height / Thickness
 M0_dot = 1.0   # Accretion Rate at outer radii, where mass first flows in 
 alpha  = 2000.0  # Viscosity Parameter 
-sf     = 0.1   # Scale Factor, m_dot << 1
 #time   = 1000  # Time to Run Simulation
 scale_factor = 0.1   # m_dot << 1
 sample_ratio = 10 # factor of viscous_timescale to sample
@@ -256,12 +255,12 @@ for t in range(disk_time_divisions[annulus]):
 #    y1_plot[i]=M_dot[1][i] 
 #    
 #    
-#plt.figure(figsize = (8,5))
-#plt.title("Mass Accretion Rate for annulus 0, 1", fontsize =15)
+plt.figure(figsize = (8,5))
+plt.title("Mass Accretion Rate", fontsize =15)
 plt.xlabel("x", fontsize =10)
 plt.ylabel("y", fontsize =10)
-#plt.plot(x_plot,y0_plot,'b',linewidth=1, label ='$Cˆ{12}$')
-plt.plot(x_plot,y1_plot,'r',linewidth=1, label ='$Cˆ{12}$' )
+#plt.plot(x_plot,y0_plot,'b',linewidth=1, label = )
+plt.plot(x_plot,y1_plot,'r',linewidth=1, label = )
 
 
 
