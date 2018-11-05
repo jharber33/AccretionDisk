@@ -259,8 +259,8 @@ plt.figure(figsize = (8,5))
 plt.title("Mass Accretion Rate", fontsize =15)
 plt.xlabel("x", fontsize =10)
 plt.ylabel("y", fontsize =10)
-#plt.plot(x_plot,y0_plot,'b',linewidth=1, label = )
-plt.plot(x_plot,y1_plot,'r',linewidth=1, label = )
+#plt.plot(x_plot,y0_plot,'b',linewidth=1)
+plt.plot(x_plot,y1_plot,'r',linewidth=1)
 
 
 
