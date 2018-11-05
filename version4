@@ -221,12 +221,17 @@ def emissivity_profile(R):
     return E
 
 
-def effective_temperature(R): 
+def effective_temperature(R,times): 
     """
     Effective Temperature, used in deteremining the blackbody spectrum
     """
-    T_eff = ((3 * G * m_dot * M_body)/(8 * np.pi * (R**3.0) * sigma))**(1.0/4.0)
+    T_eff = np.empty((len(R),times))
+    #T_c = ((3 * G * M_body) / (8 * np.pi * sigma)) #constants for a blackbody 
+    for i in range (len(R)):
+        for t in range(times): 
+            T_eff[i][t] = ((m_dot[i][t])/(R[i]**3.0))**(1.0/4.0)
     return T_eff
+
 
 
 disk_annuli = accretion_disk(N, R_in, R_out)
